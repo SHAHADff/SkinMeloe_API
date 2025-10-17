@@ -40,6 +40,7 @@ model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 # دوال مساعدة
 # -------------------
 def preprocess_pil(pil_img):
+    # تحويل الصورة دائماً لـ RGB
     img = pil_img.convert("RGB").resize(IMG_SIZE)
     arr = tf.keras.preprocessing.image.img_to_array(img)
     arr = np.expand_dims(arr, axis=0)
