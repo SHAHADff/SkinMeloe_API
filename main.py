@@ -41,10 +41,13 @@ model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 # -------------------
 def decode_b64(b64_string):
     """تحويل Base64 إلى صورة PIL"""
+    import base64, io
+    from PIL import Image
+
     if b64_string.startswith("data:"):
-        b64_string = b64_string.split(",", 1)[1]
+        b64_string = b64_string.split(",", 3)[1]
     image_bytes = base64.b64decode(b64_string)
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")  # 🔥 تأكد من RGB هنا
+    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")  # تأكدي من هذا السطر
     return image
 
 
@@ -113,6 +116,7 @@ def predict():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
