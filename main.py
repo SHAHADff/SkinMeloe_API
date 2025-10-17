@@ -47,13 +47,15 @@ def decode_b64(b64_string):
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")  # 🔥 تأكد من RGB هنا
     return image
 
+
 def preprocess_pil(pil_img):
-    """تجهيز الصورة للمودل"""
-    img = pil_img.resize(IMG_SIZE)
+    """تهيئة الصورة للمودل"""
+    img = pil_img.convert("RGB").resize(IMG_SIZE)  # 🔥 نضمن 3 قنوات دائمًا
     arr = np.array(img, dtype=np.float32)
-    arr = np.expand_dims(arr, axis=0)
     arr = tf.keras.applications.efficientnet.preprocess_input(arr)
+    arr = np.expand_dims(arr, axis=0)
     return arr
+
 
 # -------------------
 # إعداد Flask
@@ -111,5 +113,6 @@ def predict():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+
 
 
