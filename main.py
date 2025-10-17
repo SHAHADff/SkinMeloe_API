@@ -10,12 +10,12 @@ import tensorflow as tf
 # -------------------
 # إعدادات عامة
 # -------------------
-IMG_SIZE = (240, 240)
+IMG_SIZE = (240, 240)  # الحجم المطلوب للمودل
 MOLE_MIN = float(os.getenv("MOLE_MIN", 0.99))
 BIN_THR  = float(os.getenv("BIN_THR", 0.5))
 CLASS_NAMES = ["MEL","NV","BCC","AKIEC","BKL","DF","VASC"]
-MODEL_PATH = "SkinMeleo_model.keras"  # اسم المودل بعد فك الـ ZIP
-ZIP_PATH   = "SkinMeleo_model.zip"    # إذا رفعت ZIP
+MODEL_PATH = "SkinMeleo_model.keras"
+ZIP_PATH   = "SkinMeleo_model.zip"
 
 # -------------------
 # فك ضغط ZIP إذا موجود
@@ -40,18 +40,22 @@ model = tf.keras.models.load_model(MODEL_PATH, compile=False)
 # دوال مساعدة
 # -------------------
 def decode_b64(b64_string):
-    """تحويل Base64 إلى صورة PIL"""
+    """تحويل Base64 إلى صورة PIL مع إجبار RGB"""
     if b64_string.startswith("data:"):
-        b64_string = b64_string.split(",", 3)[1]
-    image_bytes = base64.b64decode(b64_string)
-    image = Image.open(io.BytesIO(image_bytes)).convert("RGB")  # 🔥 تحويل دائمًا RGB
-    return image
+        b64_string = b64_string.split(",", 1)[1]
+    image = Image.open(io.BytesIO(base64.b64decode(b64_string)))
+    return image.convert("RGB")  # 🔥 إجبار 3 قنوات دائمًا
 
 def preprocess_pil(pil_img):
-    """تهيئة الصورة للمودل"""
-    img = pil_img.convert("RGB").resize(IMG_SIZE)  # 🔥 ضمان 3 قنوات وحجم صحيح
+    """تهيئة الصورة للمودل مع إصلاح الحجم والقنوات"""
+    # 1️⃣ إجبار RGB
+    img = pil_img.convert("RGB")
+    # 2️⃣ ضبط الحجم بالضبط على IMG_SIZE
+    img = img.resize(IMG_SIZE)
+    # 3️⃣ تحويل لمصفوفة NumPy ومعالجة EfficientNet
     arr = np.array(img, dtype=np.float32)
     arr = tf.keras.applications.efficientnet.preprocess_input(arr)
+    # 4️⃣ إضافة الباتش ديمينشن
     arr = np.expand_dims(arr, axis=0)
     return arr
 
@@ -76,7 +80,10 @@ def predict():
         img = decode_b64(b64)
         x = preprocess_pil(img)
 
-        # 🔥 التأكد من أن المودل يعطي 3 مخرجات
+        # 🔥 طباعة الشكل قبل predict للتأكد
+        print("Shape before predict:", x.shape)
+
+        # التنبؤ بالمودل
         preds = model.predict(x, verbose=0)
         if len(preds) == 3:
             p_mole, p_bin, p_type = preds
@@ -109,5 +116,5 @@ def predict():
 # لتشغيل محلي أو على Render
 # -------------------
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 8080))
+    port = int(os.environ.get("PORT", 4000))
     app.run(host="0.0.0.0", port=port)
